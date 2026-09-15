@@ -13,10 +13,10 @@ Review the pending changes and report problems worth fixing before they are comm
 ## Workflow
 
 1. Work out what to review:
-   - If an argument is given, review that file, commit range, or branch (for a branch, use `git diff master...<branch>`)
-   - Otherwise run `git diff --cached` for staged changes and `git diff` for unstaged changes
-   - If both are empty, say there is nothing to review and stop
-2. Run `git diff --stat` on the chosen range to see which files changed
+   - If an argument is given, review that file, commit range, or branch (for a branch, use `git diff master...<branch>`; if it is the current branch, also run `git diff HEAD` to include uncommitted edits)
+   - Otherwise run `git diff HEAD` for staged and unstaged changes, and `git status --porcelain` to find untracked files (lines starting with `??`), which the diff does not show
+   - If there are no changes and no untracked files, say there is nothing to review and stop
+2. Run `git diff --stat` with the same range used in step 1 (for example `git diff HEAD --stat`) to see which files changed, and add any untracked files to that list
 3. Read the full diff, then open each changed file to see the surrounding code, not just the changed lines
 4. Check each change for:
    - **Correctness**: logic errors, off-by-one mistakes, unhandled null or empty input, wrong error handling
