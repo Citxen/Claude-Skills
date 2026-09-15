@@ -2,7 +2,7 @@
 name: code-review
 description: Reviews pending code changes for bugs, security issues, and maintainability problems. Use when the user asks to review code, check a diff, or look over changes before committing
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(git *)
+allowed-tools: Read, Grep, Glob, Bash(git *), Bash(python *)
 argument-hint: optional file path, commit range, or branch to review
 ---
 
@@ -21,8 +21,8 @@ Review the pending changes and report problems worth fixing before they are comm
 3. Read the full diff, then open each changed file to see the surrounding code, not just the changed lines
 4. Check each change for:
    - **Correctness**: logic errors, off-by-one mistakes, unhandled null or empty input, wrong error handling
-   - **Security**: injection, hard-coded secrets, unsafe input handling, missing authorisation checks
-   - **Maintainability**: duplicated logic, unclear names, dead code, code that doesn't match the surrounding style
+   - **Security**: read `.claude/skills/code-review/references/security_checklist.md` and check the changes against each item
+   - **Maintainability**: duplicated logic, unclear names, dead code, code that doesn't match the surrounding style. For each changed `.py` file, run `python .claude/skills/code-review/scripts/complexity_check.py <file>` and report any function it flags as a Suggestion. If Python is not available, skip this check and say it was skipped
    - **Tests**: new behaviour with no test, or tests that no longer match the code
 5. Confirm each finding against the code before reporting it. Drop anything you can't point to a concrete failure for
 
