@@ -1,1 +1,5 @@
 __pycache__/
+
+# Previous HLDs used as hld-creator examples stay local
+.claude/skills/hld-creator/examples/*
+!.claude/skills/hld-creator/examples/.gitkeep
