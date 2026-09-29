@@ -1,6 +1,7 @@
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -19,6 +20,12 @@ def valid_hld():
     text = text.replace("## 6. Solution Overview\n", "## 6. Solution Overview\n\n" + DIAGRAM + DIAGRAM)
     text = text.replace("## 10. Security Architecture\n", "## 10. Security Architecture\n\n" + SECURITY_TEXT)
     return text.replace("## 21. References\n", "## 21. References\n\n" + LINKS)
+
+def skeleton_hld():
+    lines = ["# High Level Design: Microsoft Intune for Government", ""]
+    for title, _, _ in validate_hld.parse_sections(TEMPLATE_TEXT):
+        lines += [f"## {title}", "", f"### {title}: first topic", "", f"### {title}: second topic", ""]
+    return "\n".join(lines)
 
 class ValidateHldTest(unittest.TestCase):
     def test_valid_document_passes(self):
@@ -63,6 +70,37 @@ class ValidateHldTest(unittest.TestCase):
         text = valid_hld().replace(DIAGRAM, "```mermaid\n## 99. Not A Section\n```\n", 1)
         self.assertEqual(validate_hld.validate(text, TEMPLATE_TEXT), [])
 
+class SkeletonTest(unittest.TestCase):
+    def test_skeleton_passes_in_skeleton_mode(self):
+        self.assertEqual(validate_hld.validate(skeleton_hld(), TEMPLATE_TEXT, skeleton=True), [])
+
+    def test_skeleton_fails_full_validation(self):
+        issues = validate_hld.validate(skeleton_hld(), TEMPLATE_TEXT)
+        self.assertTrue(any("Mermaid" in issue for issue in issues))
+        self.assertTrue(any("References" in issue for issue in issues))
+        self.assertTrue(any("ITIL table missing practice" in issue for issue in issues))
+
+    def test_skeleton_missing_section(self):
+        text = skeleton_hld().replace("## Glossary", "## Terms")
+        issues = validate_hld.validate(text, TEMPLATE_TEXT, skeleton=True)
+        self.assertIn("missing section: Glossary", issues)
+
+    def test_section_without_subheadings(self):
+        headings = "### Glossary: first topic\n\n### Glossary: second topic"
+        text = skeleton_hld().replace(headings, "Terms and acronyms.")
+        issues = validate_hld.validate(text, TEMPLATE_TEXT, skeleton=True)
+        self.assertTrue(any("no subheadings in section: Glossary" in issue for issue in issues))
+
+    def test_skeleton_with_diagram_fails(self):
+        text = skeleton_hld().replace("## Solution Overview\n", "## Solution Overview\n\n" + DIAGRAM)
+        issues = validate_hld.validate(text, TEMPLATE_TEXT, skeleton=True)
+        self.assertTrue(any("skeleton contains a diagram" in issue for issue in issues))
+
+    def test_skeleton_placeholder_fails(self):
+        text = skeleton_hld().replace("### Glossary: first topic", "### {{Terms}}")
+        issues = validate_hld.validate(text, TEMPLATE_TEXT, skeleton=True)
+        self.assertTrue(any("placeholder" in issue for issue in issues))
+
 class CommandLineTest(unittest.TestCase):
     def run_script(self, *args):
         return subprocess.run([sys.executable, str(SCRIPTS / "validate_hld.py"), *args], capture_output=True, text=True)
@@ -77,6 +115,17 @@ class CommandLineTest(unittest.TestCase):
         result = self.run_script(str(validate_hld.TEMPLATE))
         self.assertEqual(result.returncode, 1)
         self.assertIn("placeholder", result.stdout)
+
+    def test_skeleton_flag_usage_error(self):
+        self.assertEqual(self.run_script("--skeleton").returncode, 2)
+
+    def test_skeleton_flag_accepts_a_skeleton(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "skeleton.md"
+            path.write_text(skeleton_hld(), encoding="utf-8")
+            self.assertEqual(self.run_script(str(path)).returncode, 1)
+            result = self.run_script("--skeleton", str(path))
+            self.assertEqual(result.returncode, 0, result.stdout)
 
 if __name__ == '__main__':
     unittest.main()

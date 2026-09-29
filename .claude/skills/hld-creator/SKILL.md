@@ -3,7 +3,7 @@ name: hld-creator
 description: Creates an enterprise High Level Design (HLD) document for a technology in a regulated sector (financial, government, utilities, healthcare), researched against current standards and regulations, aligned to ITIL and architecture principles, and matched to the style of the user's previous HLDs. Use when the user asks for a high level design, HLD, or solution architecture document
 disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash(python *)
-argument-hint: <technology> <sector> [--base <example file>]  e.g. "Kubernetes platform" healthcare
+argument-hint: <technology> <sector> [--base <example file>] [--skeleton]  e.g. "Kubernetes platform" healthcare
 ---
 
 # HLD Creator
@@ -19,13 +19,14 @@ Produce a High Level Design for `$ARGUMENTS` that an enterprise architecture rev
 
 1. Parse the arguments:
    - If `--base <file>` is present, remove it from the arguments and remember the file name; it must be a file in `examples/`. If it is not there, list the files in `examples/` and stop
+   - If `--skeleton` is present anywhere in the arguments, remove it and remember it; once parsing is done, follow **Skeleton mode** below instead of steps 3 to 8
    - Of the remaining words, the last word is the sector and everything before it is the technology
    - Map the sector to one of the files in `.claude/skills/hld-creator/references/sectors/`:
      - `financial`, `finance`, `banking`, `insurance`, `fintech` → `financial.md`
      - `government`, `gov`, `public-sector`, `defence`, `defense` → `government.md`
      - `utilities`, `utility`, `energy`, `water`, `power`, `gas` → `utilities.md`
      - `healthcare`, `health`, `nhs`, `hospital`, `pharma` → `healthcare.md`
-   - If the technology or sector is missing, or the sector matches none of these, print `usage: /hld-creator <technology> <sector> [--base <example file>]` with the supported sectors and stop
+   - If the technology or sector is missing, or the sector matches none of these, print `usage: /hld-creator <technology> <sector> [--base <example file>] [--skeleton]` with the supported sectors and stop
 2. Read every reference file before researching:
    - `.claude/skills/hld-creator/references/hld_template.md` (the required structure)
    - `.claude/skills/hld-creator/references/architecture_principles.md`
@@ -66,6 +67,19 @@ Produce a High Level Design for `$ARGUMENTS` that an enterprise architecture rev
    - Fix every finding and run it again until it passes. If Python is not available, check the document against the template by hand and say the script was skipped
 8. Re-read the finished document as a sceptical architecture review board member. Remove generic statements that would be true of any system, and fix any claim that is not backed by a design element or a source
 
+## Skeleton mode
+
+With `--skeleton`, produce the framework of the document only: its section and subsection headings with no body content, so the user can agree the shape of the HLD before any of it is written. Do steps 1 and 2, then:
+
+1. Read structure sources only. `hld_template.md` gives the `##` sections. The matched sector file, `architecture_principles.md`, `itil_alignment.md` and `security_frameworks.md` give the topics that deserve their own subheading for this technology and sector. Do not research, do not design the solution, and do not open `examples/` unless `--base` was given, in which case read that file for its heading structure and numbering only
+2. Write `.claude/skills/hld-creator/artifacts/<technology-slug>-<sector>-hld-skeleton.md`, following the same overwrite rule as step 6:
+   - A `# High Level Design: <Technology> for <Sector>` title, then every `##` section of `hld_template.md` in the same order with the same titles
+   - Under each section, `###` subheadings for the topics that section must cover here. Make them specific: name the regulations, frameworks, ITIL practices, environments and components that actually apply to this technology and sector, rather than repeating the template's generic wording
+   - Headings only. No paragraphs, no tables, no diagrams and no `{{...}}` placeholders. Where a section will hold a table or a diagram, put a one-line italic note under its subheading saying what it will contain, for example `*Table: interface ID, source, target, pattern, protocol, classification.*`
+   - Keep any extra sections and heading conventions the base document uses
+3. Validate with `python .claude/skills/hld-creator/scripts/validate_hld.py --skeleton .claude/skills/hld-creator/artifacts/<file>.md`, which checks the section structure and skips the checks a skeleton cannot meet. Fix every finding and run it again until it passes
+4. Reply with the file path, the sector reference file used, the section and subheading counts, what the user should decide before the full HLD is written (the jurisdiction above all), and the command that produces the full document from the same arguments
+
 ## Output Format
 
 Reply with:
@@ -76,5 +90,7 @@ Reply with:
 - With `--base`: the most important improvements over the base, one line each
 - Open issues that need a human decision, especially unconfirmed regulatory points and the jurisdiction assumption
 - Whether validation passed or was skipped
+
+With `--skeleton`, reply as step 4 of Skeleton mode says instead.
 
 Do not paste the HLD into the reply.

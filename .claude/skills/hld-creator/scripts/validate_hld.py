@@ -4,6 +4,7 @@ from pathlib import Path
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "references" / "hld_template.md"
 HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?(.+?)\s*$")
+SUBHEADING = re.compile(r"^###\s+\S")
 # Sections whose table rows (first column) must all appear in the HLD, with the name used in findings
 REQUIRED_TABLES = {
     "Service Management (ITIL) Alignment": "ITIL table missing practice",
@@ -53,11 +54,15 @@ def check_structure(required, sections):
             issues.append(f"{number}: empty section: {title}")
     return issues
 
-def check_content(text, sections):
+def check_placeholders(text):
     issues = []
     for number, line in enumerate(text.splitlines(), start=1):
         if "{{" in line or "}}" in line:
             issues.append(f"{number}: unreplaced template placeholder")
+    return issues
+
+def check_content(text, sections):
+    issues = []
     diagrams = len(re.findall(r"^\s*```mermaid", text, flags=re.MULTILINE))
     if diagrams < MIN_DIAGRAMS:
         issues.append(f"only {diagrams} Mermaid diagrams (need at least {MIN_DIAGRAMS})")
@@ -71,6 +76,17 @@ def check_content(text, sections):
         issues.append(f"only {len(links)} links in References (need at least {MIN_REFERENCES})")
     return issues
 
+def check_skeleton(text, sections):
+    # A skeleton is headings only: every section carries subheadings and nothing is drawn yet
+    issues = []
+    for title, number, body in sections:
+        if not any(SUBHEADING.match(line) for line in body):
+            issues.append(f"{number}: no subheadings in section: {title}")
+    for number, line in enumerate(text.splitlines(), start=1):
+        if line.strip().startswith("```mermaid"):
+            issues.append(f"{number}: skeleton contains a diagram")
+    return issues
+
 def check_tables(template_sections, sections):
     issues = []
     template_bodies = {title: body for title, _, body in template_sections}
@@ -82,24 +98,28 @@ def check_tables(template_sections, sections):
                 issues.append(f"{message}: {row}")
     return issues
 
-def validate(hld_text, template_text):
+def validate(hld_text, template_text, skeleton=False):
     template_sections = parse_sections(template_text)
     required = [title for title, _, _ in template_sections]
     sections = parse_sections(hld_text)
-    return (check_structure(required, sections) + check_tables(template_sections, sections)
-            + check_content(hld_text, sections))
+    issues = check_structure(required, sections) + check_placeholders(hld_text)
+    if skeleton:
+        return issues + check_skeleton(hld_text, sections)
+    return issues + check_tables(template_sections, sections) + check_content(hld_text, sections)
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("usage: validate_hld.py <hld.md>", file=sys.stderr)
+    args = [arg for arg in sys.argv[1:] if arg != "--skeleton"]
+    skeleton = "--skeleton" in sys.argv[1:]
+    if len(args) != 1:
+        print("usage: validate_hld.py [--skeleton] <hld.md>", file=sys.stderr)
         sys.exit(2)
     try:
-        hld_text = Path(sys.argv[1]).read_text(encoding="utf-8")
+        hld_text = Path(args[0]).read_text(encoding="utf-8")
         template_text = TEMPLATE.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as e:
         print(f"error: cannot read input: {e}", file=sys.stderr)
         sys.exit(2)
-    issues = validate(hld_text, template_text)
+    issues = validate(hld_text, template_text, skeleton)
     for issue in issues:
         print(issue)
     sys.exit(1 if issues else 0)
