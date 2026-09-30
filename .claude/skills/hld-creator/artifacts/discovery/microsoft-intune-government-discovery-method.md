@@ -1,6 +1,6 @@
 # Intune for Government: Discovery Method and Workshop Pack
 
-*Companion to intune-government-discovery-pack.xlsx. Prepared 30 September 2026. This pack gathers the information a High Level Design needs; it contains no design decisions.*
+*Companion to microsoft-intune-government-discovery-pack.xlsx. Prepared 30 September 2026, rebuilt through the discovery-creator skill the same day. This pack gathers the information a High Level Design needs; it contains no design decisions.*
 
 ## 1. Purpose and scope
 
