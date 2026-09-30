@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Command Reference</title>
+<style>
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; font-size: 11pt; color: #1a1a1a;
+         max-width: 820px; margin: 24px; line-height: 1.45; }
+  h1 { font-size: 20pt; color: #1F3864; margin-bottom: 2px; }
+  .sub { color: #595959; font-style: italic; margin-top: 0; }
+  h2 { font-size: 14pt; color: #1F3864; margin-top: 26px; border-bottom: 1px solid #d0d7e5;
+       padding-bottom: 3px; }
+  pre { background: #f4f6fa; border: 1px solid #d0d7e5; border-left: 3px solid #1F3864;
+        padding: 10px 12px; font-family: Consolas, "Courier New", monospace; font-size: 10.5pt;
+        white-space: pre-wrap; margin: 8px 0; }
+  p.note { margin: 6px 0 4px; }
+  table { border-collapse: collapse; margin: 10px 0; width: 100%; }
+  th, td { border: 1px solid #d0d7e5; padding: 6px 8px; text-align: left; vertical-align: top;
+           font-size: 10.5pt; }
+  th { background: #1F3864; color: #fff; }
+  code { font-family: Consolas, "Courier New", monospace; background: #f4f6fa; padding: 1px 4px; }
+</style>
+</head>
+<body>
+
+<h1>Command Reference</h1>
+<p class="sub">Microsoft Intune / government worked example. Claude Code, repo: Claude-Skills.</p>
+
+<h2>The full run, in order</h2>
+<pre>/discovery-creator Microsoft Intune government
+/hld-creator Microsoft Intune government --skeleton
+/hld-creator Microsoft Intune government --base microsoft-intune-government-hld-skeleton.md
+/code-review high</pre>
+
+<h2>Discovery</h2>
+<pre>/discovery-creator Microsoft Intune government
+/discovery-creator Microsoft Intune government --refresh microsoft-intune-government-discovery-pack.xlsx</pre>
+<p class="note">Writes to <code>.claude/skills/hld-creator/artifacts/discovery/</code>. Refresh re-researches and updates sources without clearing answers already filled in.</p>
+
+<h2>HLD</h2>
+<pre>/hld-creator Microsoft Intune government --skeleton
+/hld-creator Microsoft Intune government --base microsoft-intune-government-hld-skeleton.md
+/hld-creator Microsoft Intune government
+/hld-creator Microsoft Intune government --base 2024-endpoint-hld.docx</pre>
+<p class="note">Context goes on the next line, never appended to the arguments &mdash; the last word is read as the sector:</p>
+<pre>/hld-creator Microsoft Intune government --base microsoft-intune-government-hld-skeleton.md
+UK central government, OFFICIAL and OFFICIAL-SENSITIVE, single tenant, 6 agencies,
+BYOD app-protection only.</pre>
+
+<h2>Caveman</h2>
+<pre>/caveman
+/caveman lite
+/caveman ultra
+/caveman wenyan-full</pre>
+<p class="note">Set once, then keep working. Changes how replies are written, not what the skills produce.</p>
+<pre>/caveman ultra
+/discovery-creator Microsoft Intune government</pre>
+
+<h2>Code review</h2>
+<pre>/code-review
+/code-review high
+/code-review max --fix
+/code-review .claude/skills/discovery-creator
+/code-review ultra
+/code-review 7 --comment
+/simplify</pre>
+
+<h2>Token-lean variant</h2>
+<pre>/caveman ultra
+/discovery-creator Microsoft Intune government --refresh microsoft-intune-government-discovery-pack.xlsx
+/hld-creator Microsoft Intune government --skeleton
+/code-review medium</pre>
+
+<h2>Arguments at a glance</h2>
+<table>
+  <tr><th>Skill</th><th>Shape</th><th>Options</th></tr>
+  <tr><td>discovery-creator</td><td>&lt;technology&gt; &lt;sector&gt;</td><td><code>--refresh &lt;pack file&gt;</code></td></tr>
+  <tr><td>hld-creator</td><td>&lt;technology&gt; &lt;sector&gt;</td><td><code>--skeleton</code>, <code>--base &lt;file&gt;</code></td></tr>
+  <tr><td>caveman</td><td>[intensity]</td><td>lite, full, ultra, wenyan-lite, wenyan-full, wenyan-ultra</td></tr>
+  <tr><td>code-review</td><td>[level] [target]</td><td>low / medium / high / max / ultra; <code>--fix</code>, <code>--comment</code>; target = PR number, branch or path</td></tr>
+</table>
+
+<h2>Sectors accepted</h2>
+<table>
+  <tr><th>Maps to</th><th>Words accepted</th></tr>
+  <tr><td>government.md</td><td>government, gov, public-sector, defence, defense</td></tr>
+  <tr><td>financial.md</td><td>financial, finance, banking, insurance, fintech</td></tr>
+  <tr><td>utilities.md</td><td>utilities, utility, energy, water, power, gas</td></tr>
+  <tr><td>healthcare.md</td><td>healthcare, health, nhs, hospital, pharma</td></tr>
+</table>
+
+</body>
+</html>
